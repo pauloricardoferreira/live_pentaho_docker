@@ -32,8 +32,9 @@ RUN pip3 install virtualenv \
 	packaging \
 	psycopg2-binary \
 	xmltodict \
-    	"apache-airflow==${AIRFLOW_VERSION}" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
-
+    	"apache-airflow==${AIRFLOW_VERSION}" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt" \
+	airflow-pentaho-plugin
+	
 #Copia o arquivo para dentro da imagem
 COPY start-airflow.sh start-airflow.sh
 

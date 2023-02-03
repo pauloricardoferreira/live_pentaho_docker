@@ -11,10 +11,8 @@ volumes:
   airflow_dags:
   airflow_postgres_data:
   postgres-prd:
-  live_hop_hop:
-  live_hop_airflow:
-  hop_config_hop:
-  hop_config_airflow:
+  pentaho_config_pentaho:
+  live_pentaho_pentaho:
   
 #recurso de ancora em YAML -> https://docs.docker.com/compose/compose-file/compose-file-v3/
 x-grupo-volumes-airflow:
@@ -31,14 +29,14 @@ x-grupo-volumes-pentaho:
     - "pentaho_config_pentaho:/opt/pentaho_config"
 
 #recurso de ancora em YAML -> https://docs.docker.com/compose/compose-file/compose-file-v3/
-x-pentaho-hop:
-  &pentaho-hop
+x-pentaho-pentaho:
+  &pentaho-pentaho
   build:
     context: .
     dockerfile: Dockerfile.pentaho
     args:
-      PENTAHO_VERSION: "2.2.0"
-      FILE_NAME: "apache-hop-client-2.2.0.zip"
+      PENTAHO_VERSION: "%209.1"
+      FILE_NAME: "pdi-ce-9.1.0.0-324.zip"
   environment:
     KETTLE_HOME: /opt/pentaho_config
     HOP_OPTIONS: "-Xmx4096m -Dfile.encoding=UTF8"
@@ -79,7 +77,7 @@ x-airflow-common:
 services:
   pentaho-server:
     #utilização da ancora
-    <<: *penaho-hop
+    <<: *pentaho-pentaho
     container_name: pentaho-server
     command: 
       - /bin/bash
@@ -105,22 +103,6 @@ services:
       - "postgres-prd:/var/lib/postgresql/data"
     ports:
       - "5433:5432"
-    networks:
-      - interna
-    restart: unless-stopped
-
-  postgres-dev:
-    container_name: postgres-dev
-    image: postgres:14
-    environment:
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: dev
-      POSTGRES_DB: live
-      #PGDATA: /data/postgres
-    volumes:
-      - "postgres-dev:/var/lib/postgresql/data"
-    ports:
-      - "5434:5432"
     networks:
       - interna
     restart: unless-stopped

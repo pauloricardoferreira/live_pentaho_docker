@@ -1,4 +1,4 @@
-FROM registry.agroterenas.com.br:5003/ubuntu:focal 
+FROM ubuntu:focal 
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PENTAHO_JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64" \

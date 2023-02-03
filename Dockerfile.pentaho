@@ -29,3 +29,5 @@ RUN /usr/bin/wget -q "https://sourceforge.net/projects/pentaho/files/Pentaho${PE
     && rm /tmp/pdi.zip
     
 RUN /usr/bin/wget -q "http://nexus.saas.hand-china.com/content/repositories/rdc/com/oracle/ojdbc7/12.1.0.2/ojdbc7-12.1.0.2.jar" -O ${PENTAHO_HOME}/data-integration/lib/ojdbc7.jar
+
+CMD [ "/opt/pentaho/data-integration/carte.sh" ]

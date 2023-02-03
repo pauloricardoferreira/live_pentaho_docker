@@ -133,7 +133,7 @@ services:
       - |
           rm -rf /opt/airflow_dags
           git clone https://github.com/pauloricardoferreira/live_pentaho_airflow_dags.git /opt/airflow_dags
-          airflow connections add 'pentaho_default' --conn-type 'http' --conn-host 'pentaho-server' --conn-login 'cluster' --conn-password 'cluster' --conn-port '8182' --conn-extra '{"pentaho_home": "/opt/pentaho", "rep": "live_pentaho", "carte_username": "cluster", "carte_password": "cluster"}'
+          airflow connections add 'pdi_default' --conn-type 'http' --conn-host 'pentaho-server' --conn-login 'cluster' --conn-password 'cluster' --conn-port '8182' --conn-extra '{"pentaho_home": "/opt/pentaho", "rep": "live_pentaho", "carte_username": "cluster", "carte_password": "cluster"}'
           airflow users create \
             --username admin \
             --password admin \

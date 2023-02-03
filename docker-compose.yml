@@ -1,0 +1,184 @@
+version: '3.5'
+
+#rede para comunicação entre os containers
+networks:
+  interna:
+    driver: bridge
+
+#definição geral dos volumes utilizados nos containers
+volumes:
+  airflow_data:
+  airflow_dags:
+  airflow_postgres_data:
+  postgres-prd:
+  live_hop_hop:
+  live_hop_airflow:
+  hop_config_hop:
+  hop_config_airflow:
+  
+#recurso de ancora em YAML -> https://docs.docker.com/compose/compose-file/compose-file-v3/
+x-grupo-volumes-airflow:
+  &grupo-volumes-airflow
+  volumes:
+    - "airflow_data:/opt/airflow/"
+    - "airflow_dags:/opt/airflow_dags"
+
+#recurso de ancora em YAML -> https://docs.docker.com/compose/compose-file/compose-file-v3/
+x-grupo-volumes-pentaho:
+  &grupo-volumes-pentaho
+  volumes:
+    - "live_pentaho_pentaho:/opt/LIVE/"
+    - "pentaho_config_pentaho:/opt/pentaho_config"
+
+#recurso de ancora em YAML -> https://docs.docker.com/compose/compose-file/compose-file-v3/
+x-pentaho-hop:
+  &pentaho-hop
+  build:
+    context: .
+    dockerfile: Dockerfile.pentaho
+    args:
+      PENTAHO_VERSION: "2.2.0"
+      FILE_NAME: "apache-hop-client-2.2.0.zip"
+  environment:
+    KETTLE_HOME: /opt/pentaho_config
+    HOP_OPTIONS: "-Xmx4096m -Dfile.encoding=UTF8"
+  <<: *grupo-volumes-pentaho
+  networks:
+    - interna
+
+#recurso de ancora em YAML -> https://docs.docker.com/compose/compose-file/compose-file-v3/
+x-airflow-common:
+  &airflow-common
+  <<: *grupo-volumes-airflow
+  build:
+    context: .
+    dockerfile: Dockerfile.airflow
+    args:
+      AIRFLOW_VERSION: 2.5.0
+  #image: registry/apache-airflow:latest
+  environment:
+    AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow_dags
+    AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+    AIRFLOW__CORE__DEFAULT_TIMEZONE: America/Sao_Paulo
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow
+    # For backward compatibility, with Airflow <2.3
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG: 1
+    AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: 1
+    AIRFLOW__WEBSERVER__INSTANCE_NAME: DEV
+    _AIRFLOW_DB_UPGRADE: 'true'
+    _AIRFLOW_WWW_USER_CREATE: 'true'
+    _AIRFLOW_WWW_USER_USERNAME: admin
+    _AIRFLOW_WWW_USER_PASSWORD: admin
+  networks:
+    - interna
+
+#definição dos serviços
+services:
+  pentaho-server:
+    #utilização da ancora
+    <<: *penaho-hop
+    container_name: pentaho-server
+    command: 
+      - /bin/bash
+      - -c
+      - |
+          rm -rf /opt/LIVE/
+          rm -rf /opt/pentaho_config
+          git clone https://github.com/pauloricardoferreira/live_pentaho.git /opt/LIVE/live_pentaho
+          git clone https://github.com/pauloricardoferreira/live_pentaho_docker.git /opt/pentaho_config
+          /opt/pentaho/data-integration/carte.sh /opt/pentaho_config/config/carte_config.xml
+    ports:
+      - "8182:8182"
+
+  postgres-prd:
+    container_name: postgres-prd
+    image: postgres:14
+    environment:
+      POSTGRES_USER: prd
+      POSTGRES_PASSWORD: prd
+      POSTGRES_DB: live
+      #PGDATA: /data/postgres
+    volumes:
+      - "postgres-prd:/var/lib/postgresql/data"
+    ports:
+      - "5433:5432"
+    networks:
+      - interna
+    restart: unless-stopped
+
+  postgres-dev:
+    container_name: postgres-dev
+    image: postgres:14
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: live
+      #PGDATA: /data/postgres
+    volumes:
+      - "postgres-dev:/var/lib/postgresql/data"
+    ports:
+      - "5434:5432"
+    networks:
+      - interna
+    restart: unless-stopped
+
+  postgres-airflow:
+    container_name: airflow-postgres
+    image: postgres:14
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+      #PGDATA: /data/postgres
+    volumes:
+      - "airflow_postgres_data:/var/lib/postgresql/data"
+    ports:
+      - "5432:5432"
+    networks:
+      - interna
+    restart: unless-stopped
+
+
+  airflow-user:
+    <<: *airflow-common
+    container_name: airflow-user
+    command:
+      - /bin/bash
+      - -c
+      - |
+          rm -rf /opt/airflow_dags
+          git clone https://github.com/pauloricardoferreira/live_pentaho_airflow_dags.git /opt/airflow_dags
+          airflow connections add 'pentaho_default' --conn-type 'http' --conn-host 'pentaho-server' --conn-login 'cluster' --conn-password 'cluster' --conn-port '8182' --conn-extra '{"pentaho_home": "/opt/pentaho", "rep": "live_pentaho", "carte_username": "cluster", "carte_password": "cluster"}'
+          airflow users create \
+            --username admin \
+            --password admin \
+            --firstname admin \
+            --lastname admin \
+            --role Admin \
+            --email admin@gmail.com
+    depends_on:
+      - postgres-airflow
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: airflow scheduler
+    container_name: airflow-scheduler
+    restart: always
+    depends_on:
+      - postgres-airflow
+      - airflow-user
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    restart: always
+    ports:
+      - 8181:8080
+    depends_on:
+      - postgres-airflow
+      - airflow-user
+
+

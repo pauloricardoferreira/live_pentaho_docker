@@ -1,0 +1,37 @@
+version: '3.5'
+
+services:
+  pentaho-carte:
+    environment:
+      PENTAHO_DI_JAVA_OPTIONS: "-Xms1024m -Xmx4096m"
+    image: registry.agroterenas.com.br:5003/pentaho-carte:9.1
+    command: 
+      - /bin/bash
+      - -c
+      - |
+        if [ -d  /opt/pentaho_config/.git ];then (cd  /opt/pentaho_config && git pull)
+            else  git clone http://paulo.ricardo:q6A7U3_tbXDzYu1os12e@git.agroterenas.com.br/paulo.ricardo/docker_pentaho_carte.git /opt/pentaho_config
+        fi
+        if [ -d  /opt/pentaho_repo/.git ];then (cd  /opt/pentaho_repo && git pull)
+            else  git clone http://paulo.ricardo:q6A7U3_tbXDzYu1os12e@git.agroterenas.com.br/paulo.ricardo/pentaho_repo.git /opt/pentaho_repo
+        fi
+        /opt/pentaho/data-integration/carte.sh /opt/pentaho_config/config/carte_config.xml
+    container_name: pentaho-carte    
+    restart: always
+    volumes:
+     - "pentaho_repo:/opt/pentaho_repo"
+     - "pentaho_config:/opt/pentaho_config"
+    ports:
+     - 8180:8180
+    networks:
+     - net-agt
+
+networks:
+  net-agt:
+    external: true
+    name: net-agt
+    
+volumes:
+  pentaho_repo:
+  pentaho_config:
+

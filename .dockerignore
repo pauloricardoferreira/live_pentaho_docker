@@ -1,0 +1,5 @@
+Dockerfile
+docker-compose*
+.gitlab*
+*.sh
+.git/

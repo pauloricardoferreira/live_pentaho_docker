@@ -1,0 +1,31 @@
+FROM registry.agroterenas.com.br:5003/ubuntu:focal 
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PENTAHO_JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64" \
+    KETTLE_HOME="/opt/pentaho_config" \
+    PENTAHO_HOME="/opt/pentaho"
+
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    openjdk-8-jre \
+    tzdata \ 
+    wget \
+    unzip \
+    git \
+    && apt-get autoremove \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV TZ=America/Sao_Paulo
+
+RUN echo $TZ > /etc/timezone \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && dpkg-reconfigure -f noninteractive tzdata
+	
+ARG PENTAHO_VERSION
+ARG FILE_NAME
+
+RUN /usr/bin/wget -q "https://sourceforge.net/projects/pentaho/files/Pentaho${PENTAHO_VERSION}/client-tools/${FILE_NAME}" -O /tmp/pdi.zip \
+    && /usr/bin/unzip -q /tmp/pdi.zip -d ${PENTAHO_HOME}/ \
+    && rm /tmp/pdi.zip
+    
+RUN /usr/bin/wget -q "http://nexus.saas.hand-china.com/content/repositories/rdc/com/oracle/ojdbc7/12.1.0.2/ojdbc7-12.1.0.2.jar" -O ${PENTAHO_HOME}/data-integration/lib/ojdbc7.jar

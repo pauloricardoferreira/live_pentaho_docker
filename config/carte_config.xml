@@ -1,0 +1,10 @@
+<slave_config>
+  <slaveserver>
+    <name>carteserver</name>
+    <hostname>0.0.0.0</hostname>
+    <port>8182</port>
+    <master>Y</master>
+    <username>cluster</username>
+    <password>cluster</password>
+  </slaveserver>
+</slave_config>

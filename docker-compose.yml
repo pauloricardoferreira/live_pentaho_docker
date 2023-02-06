@@ -35,8 +35,8 @@ x-pentaho-pentaho:
     context: .
     dockerfile: Dockerfile.pentaho
     args:
-      PENTAHO_VERSION: "%-9.3"
-      FILE_NAME: "pdi-ce-9.3.0.0-428.zip"
+      PENTAHO_VERSION: "%209.1"
+      FILE_NAME: "pdi-ce-9.1.0.0-324.zip"
   environment:
     KETTLE_HOME: /opt/pentaho_config
     PENTAHO_OPTIONS: "-Xmx4096m -Dfile.encoding=UTF8"
@@ -162,5 +162,3 @@ services:
     depends_on:
       - postgres-airflow
       - airflow-user
-
-

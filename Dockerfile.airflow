@@ -1,0 +1,42 @@
+#Definição da Imabem
+FROM ubuntu:focal
+
+#Variáveis de Ambiente
+ENV DEBIAN_FRONTEND=noninteractive \
+    PATH=$PATH:/root/.local/bin \
+    PYTHON_VERSION="3.8" \
+	TZ=America/Sao_Paulo \
+	AIRFLOW_HOME=/opt/airflow
+
+#Instalação de Pacotes Básicos
+RUN apt-get update && apt-get install --no-install-recommends -y \
+	python3.8 \
+	python3-pip \
+	tzdata \ 
+	git \
+	&& apt-get autoremove \
+	&& apt-get clean \
+	&& rm -rf /var/lib/apt/lists/*
+
+#Configurando o TimeZona
+RUN echo $TZ > /etc/timezone \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && dpkg-reconfigure -f noninteractive tzdata
+
+#Argumentos usados durando o build da imagem
+ARG AIRFLOW_VERSION
+
+#Instalando Airflow + dependencias
+RUN pip3 install virtualenv \
+	beautifulsoup4 \
+	packaging \
+	psycopg2-binary \
+	xmltodict \
+    	"apache-airflow==${AIRFLOW_VERSION}" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt" \
+	airflow-pentaho-plugin
+	
+#Copia o arquivo para dentro da imagem
+COPY start-airflow.sh start-airflow.sh
+
+#Iniciar o Serviço
+CMD [ "/bin/bash","./start-airflow.sh" ]
